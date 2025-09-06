@@ -1,5 +1,7 @@
 # Exercise 1
 
+The source code for the exercise is available [here](https://github.com/thomaschiari/deep-learning-data-task).
+
 ## 1. Distribution & Overlap
 
 ![Exercise 1](images/exercise1.png)
@@ -113,3 +115,8 @@ We can see that the missing values are not random, but are concentrated in some 
 
 - `Age` originally ranged from 0 to 90. After standardization, it is now centered at 0, but the distribution of the data remains the same. 
 - This also happens with `FoodCourt`. The original data has many zeroes and multiple large values, and after scaling, the distribution remains the same, but the values are normalized relative to other features. 
+
+---
+
+*Note*: Artificial Intelligence was used in this exercise for code completion and review.
+

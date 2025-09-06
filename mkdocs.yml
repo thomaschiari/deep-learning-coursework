@@ -1,8 +1,8 @@
-site_name: Template de Entrega
-site_author: Sandmann, H.
-site_url: https://hsandmann.github.io/documentation.template
-repo_url: https://github.com/hsandmann/documentation.template
-repo_name: github/documentation.template
+site_name: Deep Learning Coursework
+site_author: Thomas Chiari Ciocchetti de Souza
+site_url: https://thomaschiari.github.io/deep-learning-coursework
+repo_url: https://github.com/thomaschiari/deep-learning-coursework
+repo_name: github/deep-learning-coursework
 
 theme:
   name: material
@@ -110,7 +110,7 @@ plugins:
       enable_creation_date: true
   - git-authors
   - git-committers:
-      repository: hsandmann/hsandmann.github.com
+      repository: thomaschiari/deep-learning-coursework
       branch: main
   - search
   - badges
@@ -133,10 +133,5 @@ extra_javascript:
 
 nav:
   - Home: index.md
+  - Data Task: ./data/data_exercise.md
   - This documentation: ./thisdocumentation/main.md
-  - Roteiros:
-    - Roteiro 1: ./roteiro1/main.md
-    - Roteiro 2: ./roteiro2/main.md
-    - Roteiro 3: ./roteiro3/main.md
-    - Roteiro 4: ./roteiro4/main.md
-  - Projeto: ./projeto/main.md
