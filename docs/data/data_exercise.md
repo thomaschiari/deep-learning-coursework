@@ -22,3 +22,20 @@ No, a single straight line can separate only in two regions, but we have four cl
 ![Exercise 1](images/ex1_mlp_regions.png)
 
 A multi-layer perceptron (MLP) can better separate the boundaries between the classes than a linear model (see image above), bending around the classes and capturing the non-linear boundaries. 
+
+# Exercise 2
+
+## 1. Relationship between the classes
+
+![Exercise 2](images/ex2_pca_scatter.png)
+
+Looking at the projection (see image above), we see 2 main clusters: 
+- Cluster A is in the left, with some variance in both axes. 
+- Cluster B is in the right, with some variance in both axes. 
+Both clusters overlap around the origin, so they are not perfectly separable in this projection. 
+
+## 2. Linear separability
+
+From the PCA scatter, we can observe that the separation between the classes is not perfectly linear. A boundary between the two clusters may split most points correctly, but the overlap around the origin makes it difficult to perfectly separate the classes.
+
+Linear models struggle to separate the 2 classes because they are not able to capture non-linear boundaries. Neural networks with non-linear activation functions can learn non-linear boundaries, separating the classes with higher accuracy by adapting to different shapes of the data. 
