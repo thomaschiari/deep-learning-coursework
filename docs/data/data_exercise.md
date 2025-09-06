@@ -39,3 +39,77 @@ Both clusters overlap around the origin, so they are not perfectly separable in 
 From the PCA scatter, we can observe that the separation between the classes is not perfectly linear. A boundary between the two clusters may split most points correctly, but the overlap around the origin makes it difficult to perfectly separate the classes.
 
 Linear models struggle to separate the 2 classes because they are not able to capture non-linear boundaries. Neural networks with non-linear activation functions can learn non-linear boundaries, separating the classes with higher accuracy by adapting to different shapes of the data. 
+
+# Exercise 3
+
+## Dataset
+
+Kaggle's "Spaceship Titanic" dataset is a binary classification dataset. The task is to predict whether a passenger was transported to an alternate dimension during the collision with the spacetime anomaly. For that, we have the following features:
+- PassengerId: A unique identifier for each passenger.
+- HomePlanet: The home planet of the passenger.
+- CryoSleep: Indicates whether the passenger is in cryosleep for the voyage.
+- Cabin: The cabin number of the passenger.
+- Destination: The destination planet of the passenger.
+- Age: The age of the passenger.
+- VIP: Indicates whether the passenger is a VIP.
+- RoomService, FoodCourt, ShoppingMall, Spa, VRDeck: amount the passenger has spent in the ship's services.
+- Name: The name of the passenger.
+- Transported: The target variable, indicating whether the passenger was transported to an alternate dimension.
+
+Numerical features are: 
+- Age
+- RoomService
+- FoodCourt
+- ShoppingMall
+- Spa
+- VRDeck
+
+Categorical features are:
+- HomePlanet
+- CryoSleep
+- Cabin
+- Destination
+- VIP
+
+The missing values are:
+- PassengerId: 0
+- HomePlanet: 201
+- CryoSleep: 217
+- Cabin: 199
+- Destination: 182
+- Age: 179
+- VIP: 203
+- RoomService: 181
+- FoodCourt: 183
+- ShoppingMall: 208
+- Spa: 183
+- VRDeck: 188
+- Name: 200
+- Transported: 0
+
+We can see that the missing values are not random, but are concentrated in some features. We can impute the missing values with the median for numerical features and the most frequent value for categorical features.
+
+## Preprocessing the data
+
+- **Missing values**: the dataset has missing values in several numerical and categorical features. To prepare the data for a neural network, we can input the missing values:
+    - Numerical features: input the missing values with the median of each column, which is robust against outliers. 
+    - Categorical features: input the missing values wth the most frequent category (mode). This preserves the overall distribution without introducing unrealistic new labels. 
+
+- **Encoding categorical features**: the categorical features cannot be directly interpreted by the neural network, so we can use one-hot encoding to transform each category into binary features. This avoids imposing an order on the categories. 
+
+- **Scaling numerical features**: since the `tanh` activation function produces outputs between -1 and 1, we can scale numerical features using a standard scaler, which rescales data so each feature has a mean of 0 and a standard deviation of 1. This ensures that the features are distributed symetrically around 0. Alternatively, we could use a min-max scaler, scaling the features to a range between -1 and 1. 
+
+## Visualization and scaling effects
+
+### Age before and after scaling
+![Exercise 3](images/Age_before_scaling.png)
+
+![Exercise 3](images/Age_after_scaling.png)
+
+### FoodCourt before and after scaling
+![Exercise 3](images/FoodCourt_before_scaling.png)
+
+![Exercise 3](images/FoodCourt_after_scaling.png)
+
+- `Age` originally ranged from 0 to 90. After standardization, it is now centered at 0, but the distribution of the data remains the same. 
+- This also happens with `FoodCourt`. The original data has many zeroes and multiple large values, and after scaling, the distribution remains the same, but the values are normalized relative to other features. 
