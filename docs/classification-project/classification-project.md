@@ -124,6 +124,59 @@ Summary statistics of the numeric features:
 
 We additionally created a new feature `prev_contacted`, indicating if the client was previously contacted by treating the `pdays` feature as 1 if the client was previously contacted, and 0 otherwise.
 
+## 3. Data Preprocessing
+
+### Treating missing values and duplicates
+
+The first step in order to clean and preprocess the data was to treat the variable `pdays` for when there was no previous contact. For that, we used the created `prev_contacted` feature to filter the rows where the client was not previously contacted, then imputed the median value of `pdays`. 
+
+```python
+df.loc[df["prev_contacted"] == 0, "pdays"] = np.nan
+
+imputer = SimpleImputer(strategy='median')
+df[numeric_features] = imputer.fit_transform(df[numeric_features])
+```
+
+The next step was to drop the duplicates. for that, we used the `drop_duplicates` function: 
+
+```python
+before_n = len(df)
+df = df.drop_duplicates()
+after_n = len(df)
+dedup_removed = before_n - after_n
+dedup_removed
+```
+
+With that, we removed 1784 rows that were exactly the same. 
+
+### Scaling numerical features
+
+The next step was to scale numerical features. We applied standardization (z-score), which centers features around 0 with standard deviation of 1. This was made in order to remove the effect of different scales between features, equalizing variances, making the data robust to outliers. Min-max scaling was also considered, but it is highly sensitive to outliers. A few extremes may squash most data into a narrow range. 
+
+```python
+for c in numeric_features:
+    df[c] = pd.to_numeric(df[c], errors='coerce')
+
+scaler = StandardScaler()
+df[numeric_features] = scaler.fit_transform(df[numeric_features])
+```
+
+### Encoding categorical features
+
+We used one-hot encoding for all categorical features. We kept all information, avoiding the creation of a reference level. This is because neural networks are not sensitive to multicollinearity in the same way as linear models. We chose one-hot because it encodes each category as a binary feature, avoiding the creation of an order between the categories.
+
+```python
+X_cat = pd.get_dummies(df[categorical_features], drop_first=False, dtype=np.float32)
+
+processed = pd.concat(
+    [df[numeric_features].astype(np.float32), X_cat],
+    axis=1,
+)
+
+processed.insert(0, "y", df["y"].astype(np.int8))
+```
+
+Finally, we saved the processed data into a CSV file in order to use it as input for the MLP in the next step.
 
 
 
