@@ -182,7 +182,342 @@ processed.insert(0, "y", df["y"].astype(np.int8))
 
 Finally, we saved the processed data into a CSV file in order to use it as input for the MLP in the next step.
 
+## 4. MLP Implementation
 
+Now, we are going to implement a multi-layer perceptron (MLP) from scratch using Numpy operations, trained with mini-batch SGD and cross-entropy. The model supports an arbitrary number of hidden layers selectable via CLI (argument parser), and supports `relu`, `tanh` and `sigmoid` activations. 
+
+We train on the data that was the output of the previous step, where the first column is the target and all remaining columns are the treated features. We use a split of 70% for training, 15% for validation and 15% for testing in the training loop. 
+
+How to run the MLP (in the source code repository):
+
+```bash
+python src/mlp_numpy.py --data data/clean/bank-additional-full-post-preprocessed.csv --hidden 64,64 --activation relu --epochs 30 --lr 0.05 --batch_size 256 --seed 42
+```
+
+### Hyperparameters
+
+- Hidden Layers: selectable via CLI (size of each layer). Default is `64`.
+
+- Activation Functions: selectable via CLI (either `relu`, `tanh` or `sigmoid`). Default is `relu`.
+
+- Epochs: selectable via CLI (number of epochs). Default is `30`.
+
+- Learning Rate: selectable via CLI (learning rate). Default is `0.05`.
+
+- Batch Size: selectable via CLI (batch size). Default is `256`.
+
+- Seed: selectable via CLI (random seed). Default is `42`.
+
+### Architecture
+
+The model is a feed-forward network: input -> hidden layers -> output logits -> softmax. Here is the initial implementation of the MLP class:
+
+```py
+class MLP:
+    def __init__(self, input_dim, hidden_layers, num_classes, activation="relu", seed=42, l2=0.0):
+        self.activation = activation
+        self.l2 = float(l2)
+        rng = np.random.default_rng(seed)
+
+        sizes = [input_dim] + list(hidden_layers) + [num_classes]
+        self.W = []
+        self.b = []
+        for i in range(len(sizes)-1):
+            fan_in, fan_out = sizes[i], sizes[i+1]
+            if activation == "relu":
+                W = rng.normal(0.0, np.sqrt(2.0/fan_in), size=(fan_in, fan_out)).astype(np.float32)
+            else:  
+                W = rng.normal(0.0, np.sqrt(1.0/fan_in), size=(fan_in, fan_out)).astype(np.float32)
+            b = np.zeros((1, fan_out), dtype=np.float32)
+            self.W.append(W); self.b.append(b)
+```
+
+### Activation functions
+
+Activation functions introduce non-linearity to the model, allowing it to learn non-linear boundaries. We support three activation functions: `relu`, `tanh` and `sigmoid`. Here is the implementation of the activation functions:
+
+```py
+# activation functions
+def act_forward(z, kind):
+    if kind == "relu":   
+        return np.maximum(0, z)
+    if kind == "tanh":   
+        return np.tanh(z)
+    if kind == "sigmoid":
+        return 1.0 / (1.0 + np.exp(-z))
+    raise ValueError("activation must be relu/tanh/sigmoid")
+
+def act_backward(z, a, kind):
+    if kind == "relu":    
+        return (z > 0).astype(z.dtype)
+    if kind == "tanh":    
+        return 1.0 - a*a
+    if kind == "sigmoid": 
+        return a * (1.0 - a)
+    raise ValueError("activation must be relu/tanh/sigmoid")
+``` 
+
+The forward pass per layer is implemented as follows:
+
+```py
+def forward(self, X):
+    """Returns probs and caches for backprop"""
+    A = X
+    caches = []  
+    L = len(self.W)
+    for l in range(L):
+        Z = A @ self.W[l] + self.b[l]   
+        if l < L-1:
+            A_next = act_forward(Z, self.activation)
+        else:
+            A_next = Z
+        caches.append((A, Z, A_next))
+        A = A_next
+    probs = softmax(A)  
+    return probs, caches
+```
+
+And the softmax function, for the output layer, is implemented as follows:
+
+```py
+def softmax(z):
+    z = z - z.max(axis=1, keepdims=True) 
+    ez = np.exp(z)
+    return ez / (ez.sum(axis=1, keepdims=True) + 1e-12)
+```
+
+### Loss function
+
+The loss function is the cross-entropy on the softmax probabilities, calculated as follows:
+
+```py
+tr_loss = -np.log(tr_probs[np.arange(Xtr.shape[0]), ytr] + 1e-12).mean()
+va_loss = -np.log(va_probs[np.arange(Xva.shape[0]), yva] + 1e-12).mean()
+```
+
+### Optimizer
+
+The optimizer is a mini-batch SGD: we shuffle the data, take batches, compute the gradients, backpropagate and update the weights. Here is the implementation of the complete training loop:
+
+```py
+# train loop
+def train(model, Xtr, ytr, Xva, yva, epochs=30, lr=0.05, batch_size=256, seed=42):
+    rng = np.random.default_rng(seed)
+    n = Xtr.shape[0]
+    for epoch in range(1, epochs+1):
+        # mini-batch SGD
+        idx = rng.permutation(n)
+        for start in range(0, n, batch_size):
+            b = idx[start:start+batch_size]
+            probs, caches = model.forward(Xtr[b])
+            dW, db = model.backward(probs, ytr[b], caches)
+            model.step(dW, db, lr)
+        # metrics
+        tr_pred, tr_probs = model.predict(Xtr)
+        va_pred, va_probs = model.predict(Xva)
+        tr_acc = accuracy(ytr, tr_pred)
+        va_acc = accuracy(yva, va_pred)
+        tr_loss = -np.log(tr_probs[np.arange(Xtr.shape[0]), ytr] + 1e-12).mean()
+        va_loss = -np.log(va_probs[np.arange(Xva.shape[0]), yva] + 1e-12).mean()
+        print(f"epoch {epoch:03d} | train loss {tr_loss:.4f} acc {tr_acc:.4f} | val loss {va_loss:.4f} acc {va_acc:.4f}")
+```
+
+### Final model implementation
+
+The final model includes a CLI to parse the arguments, load the processed CSV, make the stratification, build the model, train, and evaluate on test:
+
+```py
+import argparse
+from pathlib import Path
+import numpy as np
+import pandas as pd
+
+# activation functions
+def act_forward(z, kind):
+    if kind == "relu":   
+        return np.maximum(0, z)
+    if kind == "tanh":   
+        return np.tanh(z)
+    if kind == "sigmoid":
+        return 1.0 / (1.0 + np.exp(-z))
+    raise ValueError("activation must be relu/tanh/sigmoid")
+
+def act_backward(z, a, kind):
+    if kind == "relu":    
+        return (z > 0).astype(z.dtype)
+    if kind == "tanh":    
+        return 1.0 - a*a
+    if kind == "sigmoid": 
+        return a * (1.0 - a)
+    raise ValueError("activation must be relu/tanh/sigmoid")
+
+# helpers
+def parse_hidden(s: str):
+    return [int(x) for x in s.split(",")] if s else [64]
+
+def softmax(z):
+    z = z - z.max(axis=1, keepdims=True) 
+    ez = np.exp(z)
+    return ez / (ez.sum(axis=1, keepdims=True) + 1e-12)
+
+def accuracy(y_true, y_pred):
+    return float((y_true == y_pred).mean())
+
+def stratified_split(X, y, train=0.70, val=0.15, seed=42):
+    rng = np.random.default_rng(seed)
+    classes = np.unique(y)
+    idx_tr, idx_va, idx_te = [], [], []
+    for c in classes:
+        idx = np.where(y == c)[0]
+        rng.shuffle(idx)
+        n = len(idx)
+        n_tr = int(n * train)
+        n_va = int(n * val)
+        idx_tr.append(idx[:n_tr])
+        idx_va.append(idx[n_tr:n_tr+n_va])
+        idx_te.append(idx[n_tr+n_va:])
+    idx_tr = np.concatenate(idx_tr); idx_va = np.concatenate(idx_va); idx_te = np.concatenate(idx_te)
+    rng.shuffle(idx_tr); rng.shuffle(idx_va); rng.shuffle(idx_te)
+    return (X[idx_tr], y[idx_tr]), (X[idx_va], y[idx_va]), (X[idx_te], y[idx_te])
+
+
+# mlp class
+class MLP:
+    def __init__(self, input_dim, hidden_layers, num_classes, activation="relu", seed=42, l2=0.0):
+        self.activation = activation
+        self.l2 = float(l2)
+        rng = np.random.default_rng(seed)
+
+        sizes = [input_dim] + list(hidden_layers) + [num_classes]
+        self.W = []
+        self.b = []
+        for i in range(len(sizes)-1):
+            fan_in, fan_out = sizes[i], sizes[i+1]
+            if activation == "relu":
+                W = rng.normal(0.0, np.sqrt(2.0/fan_in), size=(fan_in, fan_out)).astype(np.float32)
+            else:  
+                W = rng.normal(0.0, np.sqrt(1.0/fan_in), size=(fan_in, fan_out)).astype(np.float32)
+            b = np.zeros((1, fan_out), dtype=np.float32)
+            self.W.append(W); self.b.append(b)
+
+    def forward(self, X):
+        """Returns probs and caches for backprop"""
+        A = X
+        caches = []  
+        L = len(self.W)
+        for l in range(L):
+            Z = A @ self.W[l] + self.b[l]   
+            if l < L-1:
+                A_next = act_forward(Z, self.activation)
+            else:
+                A_next = Z
+            caches.append((A, Z, A_next))
+            A = A_next
+        probs = softmax(A)  
+        return probs, caches
+
+    def backward(self, probs, y, caches):
+        """Cross-entropy grads; returns dW, db lists"""
+        N = y.shape[0]
+        L = len(self.W)
+        dZ = probs.copy()
+        dZ[np.arange(N), y] -= 1.0
+        dZ /= N
+
+        dW_list, db_list = [None]*L, [None]*L
+        for l in reversed(range(L)):
+            A_prev, Z, A = caches[l]
+            dW = A_prev.T @ dZ + self.l2 * self.W[l]
+            db = dZ.sum(axis=0, keepdims=True)
+            dW_list[l] = dW.astype(np.float32)
+            db_list[l] = db.astype(np.float32)
+
+            if l > 0:
+                dA_prev = dZ @ self.W[l].T
+                A_prev_prev, Z_prev, A_prev_post = caches[l-1]
+                dZ = dA_prev * act_backward(Z_prev, A_prev_post, self.activation)
+        return dW_list, db_list
+
+    def step(self, dW_list, db_list, lr):
+        for l in range(len(self.W)):
+            self.W[l] -= lr * dW_list[l]
+            self.b[l] -= lr * db_list[l]
+
+    def predict(self, X):
+        probs, _ = self.forward(X)
+        return probs.argmax(axis=1), probs
+
+# train loop
+def train(model, Xtr, ytr, Xva, yva, epochs=30, lr=0.05, batch_size=256, seed=42):
+    rng = np.random.default_rng(seed)
+    n = Xtr.shape[0]
+    for epoch in range(1, epochs+1):
+        # mini-batch SGD
+        idx = rng.permutation(n)
+        for start in range(0, n, batch_size):
+            b = idx[start:start+batch_size]
+            probs, caches = model.forward(Xtr[b])
+            dW, db = model.backward(probs, ytr[b], caches)
+            model.step(dW, db, lr)
+        # metrics
+        tr_pred, tr_probs = model.predict(Xtr)
+        va_pred, va_probs = model.predict(Xva)
+        tr_acc = accuracy(ytr, tr_pred)
+        va_acc = accuracy(yva, va_pred)
+        tr_loss = -np.log(tr_probs[np.arange(Xtr.shape[0]), ytr] + 1e-12).mean()
+        va_loss = -np.log(va_probs[np.arange(Xva.shape[0]), yva] + 1e-12).mean()
+        print(f"epoch {epoch:03d} | train loss {tr_loss:.4f} acc {tr_acc:.4f} | val loss {va_loss:.4f} acc {va_acc:.4f}")
+
+# main function with arg parse
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--data", type=str, default="data/processed/processed.csv")
+    ap.add_argument("--hidden", type=str, default="64", help='e.g. "64" or "128,64,32"')
+    ap.add_argument("--activation", type=str, default="relu", choices=["relu","tanh","sigmoid"])
+    ap.add_argument("--epochs", type=int, default=30)
+    ap.add_argument("--lr", type=float, default=0.05)
+    ap.add_argument("--batch_size", type=int, default=256)
+    ap.add_argument("--val_ratio", type=float, default=0.15)
+    ap.add_argument("--test_ratio", type=float, default=0.15)
+    ap.add_argument("--seed", type=int, default=42)
+    ap.add_argument("--l2", type=float, default=0.0)
+    args = ap.parse_args()
+
+    df = pd.read_csv(args.data)
+    y = df.iloc[:, 0].to_numpy(dtype=np.int64)
+    X = df.iloc[:, 1:].to_numpy(dtype=np.float32)
+
+    uniq, y_mapped = np.unique(y, return_inverse=True)
+    y = y_mapped.astype(np.int64)
+    num_classes = len(uniq)
+
+    tr, va, te = stratified_split(X, y, train=1.0-args.val_ratio-args.test_ratio, val=args.val_ratio, seed=args.seed)
+    (Xtr, ytr), (Xva, yva), (Xte, yte) = tr, va, te
+
+    model = MLP(
+        input_dim=Xtr.shape[1],
+        hidden_layers=parse_hidden(args.hidden),
+        num_classes=num_classes,
+        activation=args.activation,
+        seed=args.seed,
+        l2=args.l2
+    )
+
+    # train
+    train(model, Xtr, ytr, Xva, yva, epochs=args.epochs, lr=args.lr, batch_size=args.batch_size, seed=args.seed)
+
+    # test
+    yhat, _ = model.predict(Xte)
+    test_acc = accuracy(yte, yhat)
+    print(f"\nTest accuracy: {test_acc:.4f}")
+
+if __name__ == "__main__":
+    main()
+```
+
+### Summary
+
+In this step, the MLP was implemented using only Numpy in a flexible way, so that a user can select the hyperparameters of the model, the architecture, activation functions, etc. This completes the implementation of the core model, which will be evaluated in the next section. 
 
 
 ---
