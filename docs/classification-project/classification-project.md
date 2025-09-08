@@ -128,7 +128,7 @@ We additionally created a new feature `prev_contacted`, indicating if the client
 
 ### Treating missing values and duplicates
 
-The first step in order to clean and preprocess the data was to treat the variable `pdays` for when there was no previous contact. For that, we used the created `prev_contacted` feature to filter the rows where the client was not previously contacted, then imputed the median value of `pdays`. 
+The first step in order to clean and preprocess the data was to treat the variable `pdays` for when there was no previous contact. For that, we used the created `prev_contacted` feature to filter the rows where the client was not previously contacted, then imputed the median value of `pdays`. This is the only feature with "missing" values, and we chose to fill with the median value to avoid introducing new labels.
 
 ```python
 df.loc[df["prev_contacted"] == 0, "pdays"] = np.nan
@@ -160,6 +160,10 @@ for c in numeric_features:
 scaler = StandardScaler()
 df[numeric_features] = scaler.fit_transform(df[numeric_features])
 ```
+
+With that, we keep the distribution of the data, but the values are normalized relative to other features. Here is a histogram of the `age` feature after scaling:
+
+![Age after scaling](images/age_distribution_after_scaling.png)
 
 ### Encoding categorical features
 
