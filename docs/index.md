@@ -14,7 +14,9 @@ Group Members:
 
 - [x] Data Task - 05/09/2025
 
-- [x] Classification Project - 07/09/2025
+- [x] Perceptron Task - 14/09/2025
+
+- [ ] Classification Project - 07/09/2025
 
 
 ## References
