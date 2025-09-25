@@ -16,6 +16,8 @@ Group Members:
 
 - [x] Perceptron Task - 14/09/2025
 
+- [x] MLP Task - 24/09/2025
+
 - [ ] Classification Project - 07/09/2025
 
 

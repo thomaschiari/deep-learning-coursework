@@ -135,4 +135,5 @@ nav:
   - Home: index.md
   - Data Task: ./data/data_exercise.md
   - Perceptron Task: ./perceptron/perceptron-exercise.md
+  - MLP Task: ./mlp/mlp-exercise.md
   - Classification Project: ./classification-project/classification-project.md
