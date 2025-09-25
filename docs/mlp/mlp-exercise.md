@@ -182,7 +182,8 @@ $$
 $$
 \mathbf{W}^{(1)}\leftarrow \mathbf{W}^{(1)}-\eta\,\frac{\partial L}{\partial \mathbf{W}^{(1)}}
 =
-\begin{bmatrix}0.3&-0.1\\0.2&0.4\end{bmatrix}
+\begin{bmatrix}0.3&-0.1\\
+0.2&0.4\end{bmatrix}
 -0.1
 \begin{bmatrix}
 -0.25468488 & 0.10187395\\
