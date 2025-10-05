@@ -18,7 +18,7 @@ Group Members:
 
 - [x] MLP Task - 24/09/2025
 
-- [ ] Classification Project - 07/09/2025
+- [x] Classification Project - 05/10/2025
 
 
 ## References

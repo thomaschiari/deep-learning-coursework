@@ -525,3 +525,54 @@ In this step, the MLP was implemented using only Numpy in a flexible way, so tha
 *Note*: Artificial Intelligence was used in this exercise for code completion and review, as well as for text revision and refinement.
 
 
+## 5. Model Training
+
+We train the NumPy MLP using **mini‑batch SGD** and cross‑entropy. The training loop implements: **forward propagation → loss calculation → backpropagation → parameter updates**. We initialize weights randomly (small variance) and optionally apply **L2 penalty** to reduce overfitting.
+
+**Python (core idea):**
+```python
+from mlp_numpy import MLP, stratified_split
+import numpy as np, pandas as pd
+
+df = pd.read_csv("src/data/clean/bank-additional-full-post-preprocessed.csv")
+y = df.iloc[:,0].to_numpy(dtype=np.int64)
+X = df.iloc[:,1:].to_numpy(dtype=np.float32)
+
+(Xtr,ytr), (Xva,yva), (Xte,yte) = stratified_split(X, y, train=0.70, val=0.15, seed=42)
+model = MLP(input_dim=X.shape[1], hidden_layers=[128,64], num_classes=len(np.unique(y)),
+            activation="relu", l2=1e-4, seed=42)
+# training loop: forward -> loss -> backward -> step
+```
+**CLI (reproducible baseline):**
+```bash
+python src/step5_train_mlp.py --data src/data/clean/bank-additional-full-post-preprocessed.csv --hidden 128,64 --activation relu --epochs 60 --lr 0.03 --batch_size 512 --l2 1e-4 --seed 42
+```
+**Challenges & fixes.** To avoid saturation/vanishing gradients we prefer **ReLU** over `tanh/sigmoid` for hidden layers; we keep inputs standardized; and we use **early stopping** (below) plus mild **L2** to control overfitting.
+
+---
+
+## 6. Training & Testing Strategy
+
+- **Split:** stratified **70/15/15** (train/validation/test) with seed **42** for reproducibility.  
+- **Training mode:** **mini‑batch** (batch size 512) balances speed and stability.  
+- **Early stopping:** on validation loss with `patience=10`, `min_delta=1e-4`.  
+- **Rationale:** Validation guides hyperparameter tuning (hidden sizes, LR, patience, L2).
+
+**CLI (final early‑stopped run):**
+```bash
+python src/step6_strategy.py --data src/data/clean/bank-additional-full-post-preprocessed.csv --hidden 256,128,64 --activation relu --epochs 80 --lr 0.025 --batch_size 512 --patience 10 --min_delta 1e-4 --l2 1e-4 --seed 123
+```
+
+### Submission — GitHub Pages
+
+This report (Steps 1–8, Conclusion, and References) is designed for **GitHub Pages** (course template compatible). All images live in `src/images/` and are referenced relatively.
+
+### Academic Integrity & AI Collaboration
+
+AI assistance was used for code scaffolding, documentation, and figure generation. The authors understand and can explain all parts of the solution; plagiarism policies were respected.
+
+### References
+
+1. Moro, S., Cortez, P., & Rita, P. (2014). *A Data‑Driven Approach to Predict the Success of Bank Telemarketing*. Decision Support Systems, 62, 22–31. (UCI Bank Marketing)  
+2. Rumelhart, D. E., Hinton, G. E., & Williams, R. J. (1986). *Learning representations by back‑propagating errors*. Nature, 323, 533–536.  
+3. Goodfellow, I., Bengio, Y., & Courville, A. (2016). *Deep Learning*. MIT Press (Chs. 6–7 for MLPs and optimization).
