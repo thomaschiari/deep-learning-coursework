@@ -562,6 +562,181 @@ python src/step5_train_mlp.py --data src/data/clean/bank-additional-full-post-pr
 ```bash
 python src/step6_strategy.py --data src/data/clean/bank-additional-full-post-preprocessed.csv --hidden 256,128,64 --activation relu --epochs 80 --lr 0.025 --batch_size 512 --patience 10 --min_delta 1e-4 --l2 1e-4 --seed 123
 ```
+**Curves (deep/wide run):**  
+![Loss vs. Epochs](images/curves_step6_deep_loss.png)  
+![Accuracy vs. Epochs](images/curves_step6_deep_acc.png)
+
+---
+
+## 7. Error Curves and Visualization
+
+We **show four plots** to analyze convergence and generalization: training/validation **loss** and **accuracy** for a quick baseline and for the final deep/wide model.
+
+**Notebook:** `src/step7_curves.ipynb`
+
+**Quick baseline (32×32)**  
+![Loss — quick](images/curves_step6_quick_loss.png)  
+![Accuracy — quick](images/curves_step6_quick_acc.png)
+
+**Deep/Wide (256×128×64)**  
+![Loss — deep/wide](images/curves_step6_deep_loss.png)  
+![Accuracy — deep/wide](images/curves_step6_deep_acc.png)
+
+**Interpretation.** The training curves reveal several important patterns:
+
+**Early Training Phase (Epochs 1-20):** Both training and validation metrics improve steadily, with validation accuracy actually exceeding training accuracy initially. This suggests the model is learning generalizable patterns effectively.
+
+**Peak Performance (Epoch 21):** Validation accuracy reaches its maximum at **0.9024** (epoch 21), indicating the optimal point before overfitting begins. The validation loss also reaches its minimum around this time.
+
+**Overfitting Transition (Epochs 30-50):** Around epoch 30, we observe a subtle but important shift:
+- **Validation accuracy plateaus** and begins fluctuating around 0.900-0.902, while **training accuracy continues improving** (reaching 0.900+ by epoch 45)
+- The **accuracy gap reverses**: Initially validation > training (negative gap), but by epoch 45-50, training > validation (positive gap)
+- **Loss behavior mirrors this pattern**: Validation loss initially lower than training loss, but the gap narrows and eventually reverses
+
+**Late Training Phase (Epochs 50+):** Clear overfitting emerges as training accuracy continues rising while validation accuracy stagnates or slightly declines. The model becomes increasingly specialized to the training set.
+
+**Early Stopping Effectiveness:** The model stopped at epoch 65 with the best validation performance at epoch 55, demonstrating that early stopping successfully prevented severe overfitting. The final model maintains good generalization despite the overfitting trend in later epochs.
+
+**Key Insights:**
+- **Standardized inputs and L2 regularization** (λ=1e-4) help control overfitting but don't eliminate it entirely
+- The **deep architecture** (256×128×64) has sufficient capacity to overfit, but early stopping provides effective regularization
+- The **validation set effectively guides** hyperparameter selection and prevents overfitting
+
+
+## 8. Evaluation Metrics
+
+**Notebook:** `src/step8_metrics.ipynb`
+
+We evaluate on the **held‑out test set** and compare to a **majority‑class baseline**. Because the dataset is **imbalanced**, we report **ROC‑AUC** and **PR‑AUC** (in addition to accuracy). We include a **confusion matrix heatmap** and the **per‑class precision/recall/F1** table.
+
+### Summary metrics:
+
+| Metric                       | Value                      | Interpretation                                                                                     |
+| ---------------------------- | -------------------------- | -------------------------------------------------------------------------------------------------- |
+| **Accuracy**                 | 0.897                      | Overall 89.7 % correct predictions; inflated by majority class                                     |
+| **Baseline Accuracy**        | 0.883                      | Always predicting 0 (majority) would already get 88.3 % — so accuracy alone isn’t very informative |
+| **ROC–AUC**                  | 0.790                      | Good discrimination ability across thresholds                                                      |
+| **PR–AUC**                   | 0.458                      | Moderate; model can identify some positives better than random                                     |
+
+
+
+### Confusion Matrix
+
+![Confusion Matrix](images/metrics_step8_cm.png)  
+
+| True Class ↓ / Predicted → | 0    | 1   |
+| -------------------------- | ---- | --- |
+| **0 (negative)**           | 5121 | 101 |
+| **1 (positive)**           | 510  | 181 |
+
+**Interpretation:**
+
+* **True Negatives (TN):** 5121
+  → The model correctly predicted class 0 (negative) for 5121 samples.
+* **False Positives (FP):** 101
+  → 101 samples were incorrectly classified as positive.
+* **False Negatives (FN):** 510
+  → 510 actual positives were missed (classified as 0).
+* **True Positives (TP):** 181
+  → 181 actual positives were correctly detected.
+
+So while the overall accuracy is **high (0.897)**, that’s largely because class 0 dominates — the model is very good at recognizing negatives but struggles with positives.
+
+---
+
+### ROC Curve
+
+![ROC Curve](images/metrics_step8_roc.png) 
+
+The **Receiver Operating Characteristic** (ROC Curve (AUC = 0.790)) curve plots:
+
+* **x-axis:** False Positive Rate (1 − Specificity)
+* **y-axis:** True Positive Rate (Recall or Sensitivity)
+
+The **AUC (Area Under Curve)** measures how well the model separates the two classes regardless of threshold.
+
+**Interpretation:**
+
+* **AUC = 0.5:** random guessing
+* **AUC = 1.0:** perfect separation
+* **Your AUC = 0.79:** good — the model can discriminate between classes better than random, but not perfectly.
+  In practical terms, given one random positive and one random negative, the model assigns the positive a higher score ~79 % of the time.
+
+The curve shape (steep rise near the origin, then tapering) suggests it achieves high recall with relatively few false positives early on, then saturates as threshold decreases.
+
+---
+
+### Precision–Recall Curve
+
+![Precision–Recall Curve](images/metrics_step8_pr.png)
+
+This plot is more **informative for imbalanced datasets** like yours.
+
+* **Precision:** TP / (TP + FP) — how many predicted positives are correct.
+* **Recall:** TP / (TP + FN) — how many actual positives are detected.
+* **AP (Average Precision):** area under the Precision–Recall curve (similar to AUC).
+
+**Interpretation:**
+
+* Baseline (dotted line) represents the **positive class prevalence**.
+  So the model’s precision is substantially above random across much of the curve.
+* **AP = 0.458** indicates moderate ability to rank positive cases above negatives, but still many false positives when recall increases.
+* The sharp initial peaks show that at stricter thresholds, the model can achieve **very high precision** (but only for a small number of cases).
+
+---
+### **Per‑class metrics:**  
+| Class | Precision | Recall | F1-score | Support |
+|:--|--:|--:|--:|--:|
+| 0 | 0.909 | 0.981 | 0.944 | 5222 |
+| 1 | 0.642 | 0.262 | 0.372 | 691 |
+| macro avg | 0.776 | 0.621 | 0.658 | 5913 |
+| weighted avg | 0.878 | 0.897 | 0.877 | 5913 |
+
+
+### Interpretation
+
+#### Class 0 (majority)
+
+* **Precision = 0.909** → About 91 % of predicted 0’s are truly 0.
+* **Recall = 0.981** → The model correctly finds almost all real 0’s (misses only ~2 %).
+* **F1 = 0.944** → Excellent overall balance between precision and recall.
+* **Interpretation:** The classifier is very reliable when identifying class 0.
+
+#### Class 1 (minority)
+
+* **Precision = 0.642** → Roughly two-thirds of predicted 1’s are correct.
+* **Recall = 0.262** → Detects only about a quarter of the actual positives.
+* **F1 = 0.372** → Weak combined performance, driven by low recall.
+* **Interpretation:** The model struggles to capture true positives, producing many false negatives.
+
+#### Macro averages (unweighted)
+
+* **Precision = 0.776**, **Recall = 0.621**, **F1 = 0.658**
+* Treats both classes equally.
+* Shows moderate overall discrimination but clear imbalance between the two classes.
+
+#### Weighted averages (by class frequency)
+
+* **Precision = 0.878**, **Recall = 0.897**, **F1 = 0.877**
+* Dominated by class 0 performance.
+* Closely matches overall test accuracy (~0.897).
+
+
+**Notes.** As typical in imbalanced settings, recall for the positive class is lower at default threshold 0.5; **threshold tuning**, **class weighting**, or **cost‑sensitive** optimization can raise recall for the positive class with acceptable precision trade‑offs.
+
+
+## 9. Conclusion
+
+* The model is **excellent at predicting the majority class** but **weak on minority detection**.
+* Future improvements should target **raising recall for class 1** — e.g., by resampling, adjusting thresholds, or rebalancing the loss function.
+
+**Findings.** A from‑scratch NumPy MLP with mini‑batch SGD and early stopping reaches strong ranking metrics on the Bank Marketing dataset, outperforming a majority baseline.
+
+**Limitations.** Plain MLPs do not directly address class imbalance and may require threshold tuning; probability calibration is not ensured.
+
+**Future work.** Class‑weighting or focal loss, wider architecture/regularization sweeps, feature engineering on contact history/time, and comparison with gradient‑boosted trees.
+
+---
 
 ### Submission — GitHub Pages
 
