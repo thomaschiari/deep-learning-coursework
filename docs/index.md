@@ -20,6 +20,8 @@ Group Members:
 
 - [x] Classification Project - 05/10/2025
 
+- [x] VAE Task - 26/10/2025
+
 
 ## References
 
