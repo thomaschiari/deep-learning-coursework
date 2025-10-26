@@ -137,3 +137,4 @@ nav:
   - Perceptron Task: ./perceptron/perceptron-exercise.md
   - MLP Task: ./mlp/mlp-exercise.md
   - Classification Project: ./classification-project/classification-project.md
+  - VAE Task: ./vae/vae-exercise.md
