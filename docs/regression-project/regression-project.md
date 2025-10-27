@@ -637,3 +637,8 @@ def r2_score(y_true, y_pred):
     ss_tot = np.sum((y_true - y_true.mean())**2)
     return float(1.0 - ss_res / (ss_tot + 1e-12))
 ```
+
+
+---
+
+*Note*: AI assistance was used for code scaffolding, documentation, and figure generation. The authors understand and can explain all parts of the solution; plagiarism policies were respected.
