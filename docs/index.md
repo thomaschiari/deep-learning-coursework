@@ -22,6 +22,8 @@ Group Members:
 
 - [x] VAE Task - 26/10/2025
 
+- [x] Regression Project - 26/10/2025
+
 
 ## References
 
