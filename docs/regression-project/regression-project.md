@@ -641,4 +641,69 @@ def r2_score(y_true, y_pred):
 
 ---
 
+## **6. Training and Testing Strategy**
+
+### **Data Splitting**
+
+The dataset was divided into **70 % training**, **15 % validation**, and **15 % testing** using NumPy’s random permutation with a fixed seed (42) for reproducibility.
+
+* **Training set**: used to learn model parameters.
+* **Validation set**: used to monitor performance during training, tune hyperparameters, and trigger early stopping.
+* **Test set**: kept completely unseen until the final evaluation to provide an unbiased measure of generalization.
+
+This 70/15/15 ratio gives a good balance—enough data for training while reserving sufficient samples to validate and test reliability.
+
+---
+
+### **Training Mode**
+
+We used **mini-batch gradient descent** because it offers a practical compromise between:
+
+* **Speed** (faster than stochastic = batch size 1) and
+* **Stability** (less noisy than full-batch).
+
+A batch size of 256 allowed efficient vectorized computation and smooth convergence of the loss curve.
+Each mini-batch updates the model weights, ensuring steady progress without overreacting to individual samples.
+
+---
+
+### **Early Stopping to Prevent Overfitting**
+
+During training we track the **validation loss** after each epoch.
+If it fails to improve for several epochs (patience = 20), training stops and the weights from the best validation epoch are restored.
+This prevents the network from memorizing noise in the training set and preserves generalization.
+
+Early stopping is a simple but effective form of regularization—our model consistently stopped before the validation loss started to rise.
+
+---
+
+### **Reproducibility and Validation Role**
+
+All experiments use **random seed = 42**, fixed across data splitting, initialization, and shuffling, ensuring identical results on reruns.
+Validation loss drives decisions such as:
+
+* tuning hidden-layer sizes, learning rate, and batch size;
+* deciding when to halt training;
+* and selecting the final model checkpoint.
+
+Because hyperparameters are chosen solely based on validation performance, the **test set remains untouched** until the very end, guaranteeing an honest evaluation.
+
+---
+
+### **Summary**
+
+Our strategy can be summarized as:
+
+| Aspect         | Choice                                       | Rationale                                                     |
+| :------------- | :------------------------------------------- | :------------------------------------------------------------ |
+| Split ratio    | 70 / 15 / 15                                 | Balance between training data and reliable validation/testing |
+| Batch size     | 256                                          | Fast and stable learning                                      |
+| Training mode  | Mini-batch GD                                | Efficient compromise between speed and accuracy               |
+| Early stopping | Patience = 20                                | Avoids overfitting                                            |
+| Random seed    | 42                                           | Ensures reproducibility                                       |
+| Validation use | Hyperparameter tuning & checkpoint selection | Prevents test leakage                                         |
+
+---
+
+
 *Note*: AI assistance was used for code scaffolding, documentation, and figure generation. The authors understand and can explain all parts of the solution; plagiarism policies were respected.
