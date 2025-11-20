@@ -152,16 +152,16 @@ We also include a **grid comparison** for qualitative evaluation.
     <th>Output Image</th>
   </tr>
   <tr>
-    <td><img src="images/inputs/celebA_1.jpg" width="220"></td>
-    <td><img src="images/outputs/output_001.png" width="220"></td>
+    <td><img src="/deep-learning-coursework/generative-project/images/inputs/celebA_1.jpg" width="220"></td>
+    <td><img src="/deep-learning-coursework/generative-project/images/outputs/output_001.png" width="220"></td>
   </tr>
     <tr>
-        <td><img src="images/inputs/celebA_2.jpg" width="220"></td>
-        <td><img src="images/outputs/output_002.png" width="220"></td>
+        <td><img src="/deep-learning-coursework/generative-project/images/inputs/celebA_2.jpg" width="220"></td>
+        <td><img src="/deep-learning-coursework/generative-project/images/outputs/output_002.png" width="220"></td>
     </tr>
     <tr>
-        <td><img src="images/inputs/celebA_3.jpg" width="220"></td>
-        <td><img src="images/outputs/output_003.png" width="220"></td>
+        <td><img src="/deep-learning-coursework/generative-project/images/inputs/celebA_3.jpg" width="220"></td>
+        <td><img src="/deep-learning-coursework/generative-project/images/outputs/output_003.png" width="220"></td>
     </tr>
 </table>
 
