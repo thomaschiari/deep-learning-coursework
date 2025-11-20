@@ -139,3 +139,4 @@ nav:
   - Classification Project: ./classification-project/classification-project.md
   - VAE Task: ./vae/vae-exercise.md
   - Regression Project: ./regression-project/regression-project.md
+  - Generative Project: ./generative-project/generative-project.md
