@@ -24,6 +24,8 @@ Group Members:
 
 - [x] Regression Project - 26/10/2025
 
+- [x] Generative Project - 19/11/2025
+
 
 ## References
 
