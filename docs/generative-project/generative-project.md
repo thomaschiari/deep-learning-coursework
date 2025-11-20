@@ -1,9 +1,6 @@
-# Real-to-Anime: Portrait Stylization with Stable Diffusion, LoRA, and ControlNet
+# Generative Project: Real-to-Anime - Portrait Stylization with Stable Diffusion, LoRA, and ControlNet
 
-**Course:** Artificial Neural Networks and Deep Learning (2025.2)
-**Project Type:** Generative — Image-to-Image / Text-to-Image
-**Mandatory Requirement:** Stable Diffusion
-**Tools:** Diffusers (Hugging Face), SDXL-Turbo, SD-Turbo, LoRA, ControlNet, Canny/OpenPose
+The complete source code for this project is available [here](https://github.com/thomaschiari/deep-learning-generative).
 
 ---
 
@@ -19,8 +16,6 @@ This task fits within the **Generative AI** theme of the course, which requires 
 * **Use of advanced techniques (LoRA + ControlNet)**
 * **5+ stylized outputs**
 * **Metrics + qualitative evaluation**
-
-This fulfills the criteria for **grade A**, as defined in the rubric.
 
 ---
 
@@ -63,13 +58,15 @@ We use **SDXL-Turbo for Text-to-Image** and **SD-Turbo for Image-to-Image**.
 LoRA is a parameter-efficient fine-tuning method.
 Instead of modifying all weights of a large model, LoRA inserts **low-rank matrices** inside attention blocks:
 
+$$
 [
 W' = W + \Delta W = W + BA
 ]
+$$
 
 Where:
 
-* (B) and (A) are low-rank matrices
+* $B$ and $A$ are low-rank matrices
 * They represent a “style adapter” (e.g., anime style)
 
 Advantages:
@@ -122,41 +119,76 @@ No training is performed; only inference is required.
 
 Below is an overview of the full system:
 
-```
-           RAW IMAGE (CelebA HQ)
-                      │
-                      ▼
-        ┌───────────────────────────┐
-        │  1. Preprocessing         │
-        │  - Resize                 │
-        │  - RGB normalize          │
-        └───────────────────────────┘
-                      │
-                      ▼
-        ┌───────────────────────────┐
-        │  2. Structural Conditioning│
-        │  - Canny edges             │
-        │  - (or OpenPose)          │
-        └───────────────────────────┘
-                      │
-                      ▼
-        ┌───────────────────────────┐
-        │  3. Stable Diffusion       │
-        │  - Text Encoder (prompt)   │
-        │  - UNet + LoRA             │
-        │  - ControlNet              │
-        │  - Scheduler               │
-        └───────────────────────────┘
-                      │
-                      ▼
-        ┌───────────────────────────┐
-        │  4. VAE Decoder            │
-        └───────────────────────────┘
-                      │
-                      ▼
-            ANIME-STYLE PORTRAIT
-```
-
-This clearly describes all model connections, satisfying rubric requirements.
+![Architecture](images/flowchart.png)
 
 ---
+
+# **5 — Experiments**
+
+We generate **≥5 stylized outputs**, varying:
+
+* **LoRA scales**
+* **ControlNet strengths**
+* **Guidance scales**
+* **Noise strength (I2I “creativity”)**
+* **Model variant (Turbo / SDXL)**
+
+**All images are saved to `assets/example_outputs/`.**
+
+Example outputs (annotated):
+
+1. Real → Anime (strong ControlNet, strong LoRA)
+2. Real → Anime (weaker ControlNet)
+3. Real → Soft render style
+4. Real → Cel-shaded style
+5. Real → Vibrant anime lighting
+
+We also include a **grid comparison** for qualitative evaluation.
+
+### Output/Input Examples
+<table>
+  <tr>
+    <th>Input Image</th>
+    <th>Output Image</th>
+  </tr>
+  <tr>
+    <td><img src="images/inputs/celebA_1.jpg" width="220"></td>
+    <td><img src="images/outputs/output_001.png" width="220"></td>
+  </tr>
+    <tr>
+        <td><img src="images/inputs/celebA_2.jpg" width="220"></td>
+        <td><img src="images/outputs/output_002.png" width="220"></td>
+    </tr>
+    <tr>
+        <td><img src="images/inputs/celebA_3.jpg" width="220"></td>
+        <td><img src="images/outputs/output_003.png" width="220"></td>
+    </tr>
+</table>
+
+---
+
+# **6 — Discussion**
+
+### Strengths
+
+* Identity preserved due to ControlNet
+* High-quality anime texture thanks to LoRA
+* Real-time inference with Turbo models
+* Flexible stylization with prompt control
+
+### Weaknesses
+
+* Hands and accessories may distort
+* Too much LoRA = over-stylization
+* Too little ControlNet = structural drift
+
+### Possible Extensions
+
+* Add face alignment / cropping
+* Use diffusion masks to stylize only selected regions
+* Incorporate depth maps or segmentation ControlNets
+* Animate results with frame-to-frame consistency
+
+---
+
+*Note*: Artificial Intelligence was used in this exercise for code completion and review, and for text revision.
